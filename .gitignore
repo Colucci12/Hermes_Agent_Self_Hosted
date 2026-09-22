@@ -1,0 +1,14 @@
+# Lixo local do Docker Desktop / editores
+.DS_Store
+Thumbs.db
+
+# Segredos e estado do Hermes (chaves, sessões, memória)
+.env
+hermes/data/
+
+# Contas e histórico do Open WebUI
+open-webui/data/
+
+# Restos do KasmVNC/Obsidian desktop (não usamos mais; inclui chave SSL)
+docker/obsidian/
+obsidian/config/
