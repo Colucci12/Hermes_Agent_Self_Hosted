@@ -12,3 +12,7 @@ open-webui/data/
 # Restos do KasmVNC/Obsidian desktop (não usamos mais; inclui chave SSL)
 docker/obsidian/
 obsidian/config/
+
+# Grafo do Perlite: o sidecar perlite-graph gera de novo
+obsidian/vaults/Pessoal/metadata.json
+obsidian/vaults/Pessoal/metadata.json.tmp

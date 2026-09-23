@@ -1,18 +1,17 @@
 #!/usr/bin/env python3
-"""Gera metadata.json no formato do plugin Metadata Extractor.
-
-O Perlite usa esse arquivo para desenhar o grafo. Sem ele, o canvas fica vazio.
-Rode de novo quando nascer nota ou link novo.
-"""
+"""Gera metadata.json no formato do plugin Metadata Extractor (grafo do Perlite)."""
 from __future__ import annotations
 
 import json
+import os
 import re
 from pathlib import Path
 
 WIKILINK = re.compile(r"\[\[([^\]|#]+)(?:#[^\]|]*)?(?:\|[^\]]*)?\]\]")
 TAG = re.compile(r"(?<!\w)#([a-zA-Z0-9_/-]+)")
 FENCE = re.compile(r"```.*?```", re.DOTALL)
+
+DEFAULT_VAULT = Path("/vault")
 
 
 def strip_fences(text: str) -> str:
@@ -73,14 +72,31 @@ def build_metadata(vault: Path) -> list[dict]:
     return list(by_name.values())
 
 
-def main() -> None:
-    vault = Path(__file__).resolve().parents[2] / "obsidian" / "vaults" / "Pessoal"
+def vault_path() -> Path:
+    raw = os.environ.get("VAULT_PATH")
+    if raw:
+        return Path(raw)
+    # Fora do container, o script mora em docker/perlite/.
+    try:
+        return Path(__file__).resolve().parents[2] / "obsidian" / "vaults" / "Pessoal"
+    except IndexError:
+        return DEFAULT_VAULT
+
+
+def write_metadata(vault: Path) -> Path:
     out = vault / "metadata.json"
-    out.write_text(
-        json.dumps(build_metadata(vault), ensure_ascii=False, indent=2) + "\n",
-        encoding="utf-8",
-    )
-    print(f"escreveu {out}")
+    payload = json.dumps(build_metadata(vault), ensure_ascii=False, indent=2) + "\n"
+    if out.exists() and out.read_text(encoding="utf-8") == payload:
+        return out
+    tmp = out.with_suffix(".json.tmp")
+    tmp.write_text(payload, encoding="utf-8")
+    tmp.replace(out)
+    return out
+
+
+def main() -> None:
+    vault = vault_path()
+    print(f"escreveu {write_metadata(vault)}")
 
 
 if __name__ == "__main__":

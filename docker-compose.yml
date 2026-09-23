@@ -16,7 +16,6 @@ services:
     environment:
       # Precisa ser SÓ o nome da pasta, igual ao último segmento do volume.
       - NOTES_PATH=Pessoal
-      - HOME_FILE=Bem-vindo
       - SITE_TITLE=Pessoal
       - SITE_NAME=Notas
       - LINE_BREAKS=true
@@ -28,6 +27,23 @@ services:
       - HIDE_FOLDERS=docs,private,trash
     volumes:
       - ./obsidian/vaults/Pessoal:/var/www/perlite/Pessoal:ro
+
+  # Regenera metadata.json (grafo do Perlite) quando o vault muda.
+  # Imagem pública + scripts do Git: Portainer só puxa o repo, sem build.
+  perlite-graph:
+    image: python:3.12-alpine
+    container_name: perlite-graph
+    restart: unless-stopped
+    working_dir: /app
+    command: ["python", "-u", "watch_metadata.py"]
+    environment:
+      - TZ=America/Sao_Paulo
+      - VAULT_PATH=/vault
+      - INTERVAL_SECONDS=10
+    volumes:
+      - ./obsidian/vaults/Pessoal:/vault
+      - ./docker/perlite/build_metadata.py:/app/build_metadata.py:ro
+      - ./docker/perlite/watch_metadata.py:/app/watch_metadata.py:ro
 
   perlite-web:
     image: nginx:stable
@@ -50,7 +66,9 @@ services:
     image: nousresearch/hermes-agent:v2026.9.7
     container_name: hermes
     restart: unless-stopped
-    command: gateway run
+    # Precisa ser o dispatcher oficial (s6): ele sobe dashboard + API.
+    # Só `hermes gateway run` deixa a 9119 morta.
+    entrypoint: ["sh", "/opt/boot-holographic.sh"]
     shm_size: "1gb"
     ports:
       - "9119:9119"
@@ -59,12 +77,16 @@ services:
       - ./hermes/data:/opt/data
       # O mesmo vault do Perlite: o agente lê e escreve essas notas.
       - ./obsidian/vaults/Pessoal:/vaults/Pessoal
+      - ./docker/hermes/ensure-holographic.py:/opt/ensure-holographic.py:ro
+      - ./docker/hermes/entrypoint.sh:/opt/boot-holographic.sh:ro
     env_file:
       - .env
     environment:
       - TZ=America/Sao_Paulo
       - HERMES_DASHBOARD=1
       - HERMES_DASHBOARD_PORT=9119
+      # A skill do Obsidian le isto no .env interno (/opt/data/.env), nao so aqui.
+      # O script de boot copia o valor para la.
       - OBSIDIAN_VAULT_PATH=/vaults/Pessoal
       - API_SERVER_ENABLED=true
       # 0.0.0.0 para o Open WebUI (outro container) e o celular alcançarem.
@@ -90,5 +112,18 @@ services:
       - OPENAI_API_KEY=${API_SERVER_KEY}
       - WEBUI_SECRET_KEY=${WEBUI_SECRET_KEY}
       - ENABLE_OLLAMA_API=false
+      # Site = só boca. RAG/embedding ficam no Hermes, iguais em qualquer interface.
+      - BYPASS_EMBEDDING_AND_RETRIEVAL=true
+      # Sem isso o Open WebUI grava config no SQLite e ignora as envs abaixo.
+      - ENABLE_PERSISTENT_CONFIG=false
+      # Tasks do site viram sessão extra no Hermes (gasta cota, polui o dashboard).
+      - ENABLE_TITLE_GENERATION=false
+      - ENABLE_FOLLOW_UP_GENERATION=false
+      - ENABLE_TAGS_GENERATION=false
+      - ENABLE_AUTOCOMPLETE_GENERATION=false
+      - ENABLE_RETRIEVAL_QUERY_GENERATION=false
+      - ENABLE_SEARCH_QUERY_GENERATION=false
+      # Agente pode demorar (tool + 503 do Gemini). Doc do Open WebUI: 1800s.
+      - AIOHTTP_CLIENT_TIMEOUT=1800
     depends_on:
       - hermes
