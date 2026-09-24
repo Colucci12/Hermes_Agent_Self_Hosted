@@ -1,7 +1,6 @@
 # Stack local (PC ou qualquer servidor sem Traefik). Tudo por porta no host:
 #   Notas (Perlite)     http://localhost:8080
 #   Dashboard Hermes    http://localhost:9119
-#   API do Hermes       http://localhost:8642/v1   (Bearer API_SERVER_KEY)
 #
 # Home server com Traefik: use docker-compose.homeserver.yml (arquivo completo,
 # sem portas no host).
@@ -60,7 +59,6 @@ services:
 
   # Hermes Agent (Nous Research). Tudo que é estado mora em /opt/data.
   #   9119 = dashboard (login do .env)
-  #   8642 = API OpenAI-compatível (Bearer API_SERVER_KEY)
   hermes:
     image: nousresearch/hermes-agent:v2026.9.7
     container_name: hermes
@@ -71,7 +69,6 @@ services:
     shm_size: "1gb"
     ports:
       - "9119:9119"
-      - "8642:8642"
     volumes:
       - ./hermes/data:/opt/data
       # Vault separado do /opt/data (doc Docker + skill obsidian).
@@ -87,9 +84,7 @@ services:
       - OBSIDIAN_VAULT_PATH=/obsidian
       # Imagem Docker trava write_file em /opt/data. Vault é outro mount.
       - HERMES_WRITE_SAFE_ROOT=/opt/data:/obsidian
-      - API_SERVER_ENABLED=true
-      # 0.0.0.0 para clientes fora do container (ex.: Telegram/API) alcançarem.
-      - API_SERVER_HOST=0.0.0.0
-      - API_SERVER_PORT=8642
-      - API_SERVER_CORS_ORIGINS=*
+      - API_SERVER_ENABLED=false
+      # Mantém a API inacessível pela rede Docker, mesmo se a imagem a iniciar.
+      - API_SERVER_HOST=127.0.0.1
     mem_limit: 4g
