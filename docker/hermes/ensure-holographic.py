@@ -2,9 +2,8 @@
 """Ajustes de boot no volume /opt/data (nao vai para o Git).
 
 - memory.provider: holographic no config.yaml
-- OBSIDIAN_VAULT_PATH no .env do Hermes (a skill do Obsidian le esse arquivo,
-  nao o environment do Docker). Sem isso o agente cai no fallback
-  ~/Documents/Obsidian Vault e grava fora do Perlite.
+- OBSIDIAN_VAULT_PATH no .env do Hermes — e o que a skill oficial le
+  (${HERMES_HOME}/.env). O compose tambem expoe a mesma variavel.
 """
 from __future__ import annotations
 
@@ -48,7 +47,7 @@ def ensure_obsidian_env() -> None:
         new = re.sub(rf"(?m)^{VAULT_KEY}=.*$", line, text, count=1)
     else:
         suffix = "" if not text or text.endswith("\n") else "\n"
-        new = text + suffix + f"\n# Vault montado pelo compose (Perlite le a mesma pasta)\n{line}\n"
+        new = text + suffix + "\n# Skill obsidian (HERMES_HOME/.env)\n" + line + "\n"
 
     if new != text:
         ENV_FILE.write_text(new, encoding="utf-8")

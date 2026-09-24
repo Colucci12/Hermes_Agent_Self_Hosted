@@ -16,3 +16,7 @@ obsidian/config/
 # Grafo do Perlite: o sidecar perlite-graph gera de novo
 obsidian/vaults/Pessoal/metadata.json
 obsidian/vaults/Pessoal/metadata.json.tmp
+
+# Conteúdo do vault é dado local de cada instalação/sessão
+obsidian/vaults/Pessoal/*
+!obsidian/vaults/Pessoal/.gitkeep

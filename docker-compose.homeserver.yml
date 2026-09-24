@@ -4,7 +4,6 @@
 # Nada publica porta no host; o Traefik alcança os serviços pela rede "traefik".
 # Hosts e o hash do basicAuth vêm do .env (veja .env.example).
 #
-#   CHAT_HOST    Open WebUI      conta própria do Open WebUI (sem basicAuth)
 #   NOTES_HOST   Perlite         basicAuth
 #   HERMES_HOST  Dashboard       basicAuth + login do Hermes
 #   API_HOST     API do Hermes   só HTTPS + Bearer API_SERVER_KEY
@@ -79,7 +78,7 @@ services:
     shm_size: "1gb"
     volumes:
       - ./hermes/data:/opt/data
-      - ./obsidian/vaults/Pessoal:/vaults/Pessoal
+      - ./obsidian/vaults/Pessoal:/obsidian
       - ./docker/hermes/ensure-holographic.py:/opt/ensure-holographic.py:ro
       - ./docker/hermes/entrypoint.sh:/opt/boot-holographic.sh:ro
     env_file:
@@ -89,9 +88,8 @@ services:
       - HERMES_DASHBOARD=1
       - HERMES_DASHBOARD_PORT=9119
       - HERMES_DASHBOARD_PUBLIC_URL=https://${HERMES_HOST}
-      # A skill do Obsidian le isto no .env interno (/opt/data/.env), nao so aqui.
-      # O script de boot copia o valor para la.
-      - OBSIDIAN_VAULT_PATH=/vaults/Pessoal
+      - OBSIDIAN_VAULT_PATH=/obsidian
+      - HERMES_WRITE_SAFE_ROOT=/opt/data:/obsidian
       - API_SERVER_ENABLED=true
       - API_SERVER_HOST=0.0.0.0
       - API_SERVER_PORT=8642
@@ -115,41 +113,6 @@ services:
       - "traefik.http.routers.hermes-api.tls.certresolver=leresolver"
       - "traefik.http.routers.hermes-api.service=hermes-api"
       - "traefik.http.services.hermes-api.loadbalancer.server.port=8642"
-      - "traefik.docker.network=traefik"
-
-  open-webui:
-    image: ghcr.io/open-webui/open-webui:main
-    container_name: open-webui
-    restart: unless-stopped
-    volumes:
-      - ./open-webui/data:/app/backend/data
-    environment:
-      - TZ=America/Sao_Paulo
-      - OPENAI_API_BASE_URL=http://hermes:8642/v1
-      - OPENAI_API_KEY=${API_SERVER_KEY}
-      - WEBUI_SECRET_KEY=${WEBUI_SECRET_KEY}
-      - WEBUI_URL=https://${CHAT_HOST}
-      - ENABLE_OLLAMA_API=false
-      - BYPASS_EMBEDDING_AND_RETRIEVAL=true
-      - ENABLE_PERSISTENT_CONFIG=false
-      - ENABLE_TITLE_GENERATION=false
-      - ENABLE_FOLLOW_UP_GENERATION=false
-      - ENABLE_TAGS_GENERATION=false
-      - ENABLE_AUTOCOMPLETE_GENERATION=false
-      - ENABLE_RETRIEVAL_QUERY_GENERATION=false
-      - ENABLE_SEARCH_QUERY_GENERATION=false
-      - AIOHTTP_CLIENT_TIMEOUT=1800
-    depends_on:
-      - hermes
-    networks:
-      - default
-      - traefik
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.open-webui.rule=Host(`${CHAT_HOST}`)"
-      - "traefik.http.routers.open-webui.entrypoints=websecure"
-      - "traefik.http.routers.open-webui.tls.certresolver=leresolver"
-      - "traefik.http.services.open-webui.loadbalancer.server.port=8080"
       - "traefik.docker.network=traefik"
 
 networks:
