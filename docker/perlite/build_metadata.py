@@ -30,6 +30,7 @@ def collect_notes(vault: Path) -> dict[str, Path]:
 def build_metadata(vault: Path) -> list[dict]:
     notes = collect_notes(vault)
     by_name: dict[str, dict] = {}
+    backlinks_by_path: dict[str, list[dict]] = {}
 
     for name, path in notes.items():
         rel = path.relative_to(vault).as_posix()
@@ -42,9 +43,18 @@ def build_metadata(vault: Path) -> list[dict]:
             link = {"link": target}
             target_path = notes.get(Path(target).stem)
             if target_path is not None:
-                link["relativePath"] = target_path.relative_to(vault).as_posix()
+                target_rel = target_path.relative_to(vault).as_posix()
+                link["relativePath"] = target_rel
             if link not in links:
                 links.append(link)
+                if target_path is not None:
+                    backlinks_by_path.setdefault(target_rel, []).append(
+                        {
+                            "fileName": name,
+                            "link": target_path.stem,
+                            "relativePath": rel,
+                        }
+                    )
         if links:
             entry["links"] = links
 
@@ -55,17 +65,7 @@ def build_metadata(vault: Path) -> list[dict]:
         by_name[name] = entry
 
     for entry in by_name.values():
-        backlinks = []
-        for other in by_name.values():
-            for link in other.get("links", []):
-                if link.get("relativePath") == entry["relativePath"]:
-                    backlinks.append(
-                        {
-                            "fileName": other["fileName"],
-                            "link": entry["fileName"],
-                            "relativePath": other["relativePath"],
-                        }
-                    )
+        backlinks = backlinks_by_path.get(entry["relativePath"], [])
         if backlinks:
             entry["backlinks"] = backlinks
 
