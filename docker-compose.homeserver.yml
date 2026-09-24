@@ -2,7 +2,7 @@
 #   docker compose -f docker-compose.homeserver.yml up -d
 #
 # Nada publica porta no host; o Traefik alcança os serviços pela rede "traefik".
-# Hosts e o hash do basicAuth vêm do .env (veja .env.example).
+# Hosts e credenciais vêm das variáveis configuradas na stack do Portainer.
 #
 #   NOTES_HOST   Perlite         basicAuth
 #   HERMES_HOST  Dashboard       basicAuth + login do Hermes
@@ -60,11 +60,11 @@ services:
       - traefik
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.perlite.rule=Host(`${NOTES_HOST}`)"
+      - "traefik.http.routers.perlite.rule=Host(`${NOTES_HOST:?Defina_NOTES_HOST_no_Portainer}`)"
       - "traefik.http.routers.perlite.entrypoints=websecure"
       - "traefik.http.routers.perlite.tls.certresolver=leresolver"
       - "traefik.http.routers.perlite.middlewares=agent-auth"
-      - "traefik.http.middlewares.agent-auth.basicauth.users=${TRAEFIK_BASIC_AUTH_USERS}"
+      - "traefik.http.middlewares.agent-auth.basicauth.users=${TRAEFIK_BASIC_AUTH_USERS:?Defina_TRAEFIK_BASIC_AUTH_USERS_no_Portainer}"
       - "traefik.http.services.perlite.loadbalancer.server.port=80"
       - "traefik.docker.network=traefik"
 
@@ -79,13 +79,14 @@ services:
       - ./obsidian/vaults/Pessoal:/obsidian
       - ./docker/hermes/ensure-holographic.py:/opt/ensure-holographic.py:ro
       - ./docker/hermes/entrypoint.sh:/opt/boot-holographic.sh:ro
-    env_file:
-      - .env
     environment:
       - TZ=America/Sao_Paulo
       - HERMES_DASHBOARD=1
       - HERMES_DASHBOARD_PORT=9119
-      - HERMES_DASHBOARD_PUBLIC_URL=https://${HERMES_HOST}
+      - HERMES_DASHBOARD_PUBLIC_URL=https://${HERMES_HOST:?Defina_HERMES_HOST_no_Portainer}
+      - HERMES_DASHBOARD_BASIC_AUTH_USERNAME=${HERMES_DASHBOARD_BASIC_AUTH_USERNAME:?Defina_HERMES_DASHBOARD_BASIC_AUTH_USERNAME_no_Portainer}
+      - HERMES_DASHBOARD_BASIC_AUTH_PASSWORD_HASH=${HERMES_DASHBOARD_BASIC_AUTH_PASSWORD_HASH:?Defina_HERMES_DASHBOARD_BASIC_AUTH_PASSWORD_HASH_no_Portainer}
+      - HERMES_DASHBOARD_BASIC_AUTH_SECRET=${HERMES_DASHBOARD_BASIC_AUTH_SECRET:?Defina_HERMES_DASHBOARD_BASIC_AUTH_SECRET_no_Portainer}
       - OBSIDIAN_VAULT_PATH=/obsidian
       - HERMES_WRITE_SAFE_ROOT=/opt/data:/obsidian
       - API_SERVER_ENABLED=false
@@ -96,7 +97,7 @@ services:
       - traefik
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.hermes-dash.rule=Host(`${HERMES_HOST}`)"
+      - "traefik.http.routers.hermes-dash.rule=Host(`${HERMES_HOST:?Defina_HERMES_HOST_no_Portainer}`)"
       - "traefik.http.routers.hermes-dash.entrypoints=websecure"
       - "traefik.http.routers.hermes-dash.tls.certresolver=leresolver"
       - "traefik.http.routers.hermes-dash.middlewares=agent-auth"

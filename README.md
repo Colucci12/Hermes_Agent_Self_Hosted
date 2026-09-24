@@ -27,9 +27,9 @@ O vault no container do Hermes é `/obsidian` (`OBSIDIAN_VAULT_PATH`). A imagem 
 
 ## No home server (Portainer + Traefik)
 
-Arquivo do stack no Portainer: `docker-compose.homeserver.yml`. Só o link do Git + as envs; o sidecar do grafo usa `python:3.12-alpine` (imagem pública) e os scripts que já vêm no repositório.
+Arquivo do stack no Portainer: `docker-compose.homeserver.yml`. Ao implantar pelo repositório, configure as variáveis no formulário da stack; não é necessário ter um arquivo `.env` no repositório. O sidecar do grafo usa `python:3.12-alpine` (imagem pública) e os scripts que já vêm no repositório.
 
-No `.env` do servidor, preencha os hosts (`NOTES_HOST`, `HERMES_HOST`) e o hash do basicAuth (`TRAEFIK_BASIC_AUTH_USERS`). Gere o hash com:
+Nas variáveis da stack, preencha `NOTES_HOST`, `HERMES_HOST`, `TRAEFIK_BASIC_AUTH_USERS`, `HERMES_DASHBOARD_BASIC_AUTH_USERNAME`, `HERMES_DASHBOARD_BASIC_AUTH_PASSWORD_HASH` e `HERMES_DASHBOARD_BASIC_AUTH_SECRET`. Gere o hash BasicAuth com:
 
 ```bash
 htpasswd -nbB admin SUA_SENHA
